@@ -1,0 +1,72 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 [-u user] [-d user] [-m user] [-g group] [-b directory] [-h]"
+  echo "  -u user  : Add a new user"
+  echo "  -d user  : Delete an existing user"
+  echo "  -m user  : Modify an existing user"
+  echo "  -g group : Create a group"
+  echo "  -b directory : Backup a directory"
+  echo "  -h       : Display this help message"
+}
+
+while getopts "u:d:m:g:b:h" opt; do
+  case $opt in
+    u)
+      if [ -z "$OPTARG" ]; then
+         usage
+         exit 1
+      fi
+      sudo useradd "$OPTARG"
+      echo "User $OPTARG added."
+      ;;
+    d)
+      if [ -z "$OPTARG" ]; then
+        usage
+        exit 1
+      fi
+      sudo userdel "$OPTARG"
+      echo "User $OPTARG deleted."
+      ;;
+    m)
+       if [ -z "$OPTARG" ]; then
+         usage
+         exit 1
+      fi
+      read -p "Enter new password for $OPTARG: " password
+      sudo usermod -p $(echo "$password" | openssl passwd -stdin -1) "$OPTARG"
+      echo "Password for $OPTARG modified."
+      ;;
+    g)
+      if [ -z "$OPTARG" ]; then
+        usage
+        exit 1
+      fi
+      sudo groupadd "$OPTARG"
+      echo "Group $OPTARG added"
+      ;;
+    b)
+       if [ -z "$OPTARG" ]; then
+         usage
+         exit 1
+      fi
+      backup_dir="$OPTARG"
+      backup_file="backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
+      tar -czf "$backup_file" "$backup_dir"
+      echo "Backup created: $backup_file"
+      ;;
+    h)
+       usage
+       exit 0
+       ;;
+    \?)
+      usage
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+  usage
+fi
